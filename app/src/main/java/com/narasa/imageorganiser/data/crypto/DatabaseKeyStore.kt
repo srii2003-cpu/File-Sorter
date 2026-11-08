@@ -4,8 +4,10 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import java.io.File
+import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.ProviderException
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -55,6 +57,11 @@ class DatabaseKeyStore(
             cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(TAG_BITS, bytes, 1, IV_BYTES))
             return cipher.doFinal(bytes, 1 + IV_BYTES, bytes.size - 1 - IV_BYTES)
         } catch (e: GeneralSecurityException) {
+            throw KeyUnavailableException(e)
+        } catch (e: ProviderException) {
+            // Keystore failures after an OEM reset surface as this RuntimeException.
+            throw KeyUnavailableException(e)
+        } catch (e: IOException) {
             throw KeyUnavailableException(e)
         }
     }

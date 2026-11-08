@@ -2,12 +2,17 @@ package com.narasa.imageorganiser.data
 
 import android.database.DatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabaseCorruptException
+import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.sqlite.SQLiteDiskIOException
+import android.database.sqlite.SQLiteFullException
 import android.database.sqlite.SQLiteException
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.narasa.imageorganiser.classifier.ImageStatus
 import com.narasa.imageorganiser.classifier.Source
 import com.narasa.imageorganiser.data.crypto.DatabaseKeyStore
+import com.narasa.imageorganiser.data.crypto.KeyUnavailableException
 import com.narasa.imageorganiser.data.db.DatabaseProvider
 import com.narasa.imageorganiser.data.db.ImageEntity
 import com.narasa.imageorganiser.data.db.OcrTextEntity
@@ -16,6 +21,7 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import net.zetetic.database.sqlcipher.SQLiteNotADatabaseException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -59,10 +65,14 @@ class EncryptedDatabaseTest {
         db.close()
     }
 
+    private val otherAlias = "test_wrap_other_$id"
+    private val otherKeyFile = "test_key_other_$id.bin"
+
     @After
     fun cleanUp() {
         context.deleteDatabase(dbName)
         keyStore().reset()
+        DatabaseKeyStore(context, otherAlias, otherKeyFile).reset()
     }
 
     @Test
@@ -125,5 +135,25 @@ class EncryptedDatabaseTest {
         p.get().close()
         assertEquals(0, count)
         assertTrue(p.lastOpenRebuilt)
+    }
+
+    @Test
+    fun wrongKey_rebuildsEmptyDatabase() = runBlocking {
+        seedOneImage()
+        val p = DatabaseProvider(context, DatabaseKeyStore(context, otherAlias, otherKeyFile), dbName)
+        val count = p.get().imageDao().count()
+        p.get().close()
+        assertEquals(0, count)
+        assertTrue(p.lastOpenRebuilt)
+    }
+
+    @Test
+    fun rebuildPolicy_onlyCorruptionOrKeyLoss() {
+        assertTrue(DatabaseProvider.shouldRebuild(SQLiteDatabaseCorruptException()))
+        assertTrue(DatabaseProvider.shouldRebuild(KeyUnavailableException()))
+        assertTrue(DatabaseProvider.shouldRebuild(SQLiteNotADatabaseException()))
+        assertFalse(DatabaseProvider.shouldRebuild(SQLiteFullException()))
+        assertFalse(DatabaseProvider.shouldRebuild(SQLiteDiskIOException()))
+        assertFalse(DatabaseProvider.shouldRebuild(SQLiteDatabaseLockedException()))
     }
 }

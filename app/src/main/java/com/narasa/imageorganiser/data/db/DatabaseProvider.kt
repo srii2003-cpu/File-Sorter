@@ -1,16 +1,19 @@
 package com.narasa.imageorganiser.data.db
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteException
 import androidx.room.Room
 import com.narasa.imageorganiser.data.crypto.DatabaseKeyStore
 import com.narasa.imageorganiser.data.crypto.KeyUnavailableException
+import net.zetetic.database.sqlcipher.SQLiteNotADatabaseException
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 /**
- * Opens the SQLCipher-encrypted index. The index is a rebuildable cache: if the key is lost
- * or the file cannot be opened, the database and key are deleted and a fresh one is created.
- * Originals in shared storage are never touched. Call [get] off the main thread.
+ * Opens the SQLCipher-encrypted index. If the key is lost or the file is corrupt (a wrong key
+ * also reads as "not a database"), the database and key are deleted and a fresh one is created.
+ * Temporary errors (disk full, I/O, locked) are thrown instead, so the index survives and the
+ * next open retries. Originals in shared storage are never touched. Call [get] off the main thread.
  */
 class DatabaseProvider(
     private val context: Context,
@@ -30,9 +33,8 @@ class DatabaseProvider(
         System.loadLibrary("sqlcipher")
         val db = try {
             open(keyStore.getOrCreateKey())
-        } catch (e: KeyUnavailableException) {
-            rebuild()
-        } catch (e: SQLiteException) {
+        } catch (e: Exception) {
+            if (!shouldRebuild(e)) throw e
             rebuild()
         }
         database = db
@@ -60,5 +62,11 @@ class DatabaseProvider(
             throw e
         }
         return db
+    }
+
+    companion object {
+        /** Only key loss and corruption justify deleting the index. SQLCipher reports a wrong key or garbage file as NOTADB. */
+        fun shouldRebuild(e: Throwable): Boolean =
+            e is KeyUnavailableException || e is SQLiteNotADatabaseException || e is SQLiteDatabaseCorruptException
     }
 }

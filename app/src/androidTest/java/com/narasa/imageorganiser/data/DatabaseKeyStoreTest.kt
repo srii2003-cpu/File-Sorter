@@ -54,4 +54,11 @@ class DatabaseKeyStoreTest {
         KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(alias)
         assertThrows(KeyUnavailableException::class.java) { store().getOrCreateKey() }
     }
+
+    @Test
+    fun keyFileUnreadable_throwsKeyUnavailable() {
+        // A directory where the key file should be makes readBytes() throw IOException.
+        File(context.noBackupFilesDir, fileName).mkdirs()
+        assertThrows(KeyUnavailableException::class.java) { store().getOrCreateKey() }
+    }
 }
