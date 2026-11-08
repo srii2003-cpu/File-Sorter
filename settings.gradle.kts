@@ -14,4 +14,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "ImageOrganiser"
-include(":classifier")
+include(":app", ":classifier")

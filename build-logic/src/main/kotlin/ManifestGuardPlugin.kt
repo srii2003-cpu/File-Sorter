@@ -46,7 +46,7 @@ class ManifestGuardPlugin : Plugin<Project> {
         val components = project.extensions.getByType(AndroidComponentsExtension::class.java)
         components.onVariants { variant ->
             val cap = variant.name.replaceFirstChar { it.uppercase() }
-            val task = project.tasks.register("check${cap}Manifest", CheckManifestTask::class.java) {
+            val task = project.tasks.register("guard${cap}Manifest", CheckManifestTask::class.java) {
                 manifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
                 allowedExported.set(extension.allowedExported)
                 report.set(project.layout.buildDirectory.file("reports/manifest-guard/${variant.name}.txt"))
