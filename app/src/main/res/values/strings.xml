@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Image Organiser</string>
+
+    <string name="access_title">Find documents from your chats</string>
+    <string name="access_body">This app looks through images saved from WhatsApp, Telegram, Downloads and Screenshots so you can search the text inside them. It has no internet access: nothing leaves your phone.</string>
+    <string name="access_allow">Allow photo access</string>
+    <string name="access_try_again">Try again</string>
+    <string name="access_open_settings">Open settings</string>
+
+    <string name="partial_banner">Showing %1$d selected photos · Allow all</string>
+    <string name="partial_banner_note">New images won\'t be added automatically until you allow all photos.</string>
+
+    <string name="home_access">Photo access: %1$s</string>
+    <string name="home_index">Encrypted index: %1$s</string>
+    <string name="index_opening">opening…</string>
+    <string name="index_ready">ready</string>
+    <string name="index_rebuilt">rebuilt</string>
+    <string name="index_failed">could not open</string>
+    <string name="home_phase_note">Indexing arrives in Phase 1.</string>
 </resources>
