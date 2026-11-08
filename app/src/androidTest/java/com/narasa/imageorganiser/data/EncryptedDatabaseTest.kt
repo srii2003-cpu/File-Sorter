@@ -88,7 +88,7 @@ class EncryptedDatabaseTest {
     @Test
     fun fileHeaderIsNotPlainSqlite() {
         seedOneImage()
-        val header = dbFile.inputStream().use { it.readNBytes(16) }
+        val header = ByteArray(16).also { buf -> java.io.DataInputStream(dbFile.inputStream()).use { it.readFully(buf) } }
         assertNotEquals("SQLite format 3\u0000", String(header, Charsets.US_ASCII))
     }
 
