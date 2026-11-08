@@ -1,0 +1,17 @@
+# Decisions and deviations from the spec
+
+Each entry records where the build departs from, narrows or adds to the V3 spec (8 Nov 2026). Newest last.
+
+| # | Date | Decision | Reason |
+|---|---|---|---|
+| D1 | 2026-11-08 | Phases 0–1 are built as the evaluation build. Phase 2 does not start until the owner confirms the validation gate has passed. | The spec forbids product code before 2 of 3 hypotheses pass; interviews run in parallel, and the evaluation build is a spec deliverable for weeks 1–2. |
+| D2 | 2026-11-08 | One junk signal keeps the image's primary category and sets a review flag instead of changing the primary to `REVIEW`. Adds `image.in_review` (bool) and `image.review_reason` (text). | Spec J3 sends one-signal images to Review, but `REVIEW` is also a primary category; overwriting a correct `GRAPHIC` loses information. |
+| D3 | 2026-11-08 | OCR full-text search uses FTS4 through Room, not FTS5. | Room only supports FTS3/FTS4 entities; FTS4 is enough for word search. SQLCipher's FTS support is checked by an instrumented test in Phase 0. |
+| D4 | 2026-11-08 | WhatsApp `Sent/` and `WhatsApp Stickers/` visibility is checked on a real device in Phase 1. If MediaStore hides them (`.nomedia`), the sticker-folder junk signal is dropped and `image.direction` becomes nullable (unknown). | These folders likely carry `.nomedia`, and reading them otherwise would need `MANAGE_EXTERNAL_STORAGE`, which is never requested. |
+| D5 | 2026-11-08 | Deletion sync queries MediaStore with `QUERY_ARG_MATCH_TRASHED`; metadata is deleted only when the file is fully gone, not while it sits in the system trash. | Otherwise trashing deletes the `TRASHED`/`REJECTED` state, and a restored image is re-suggested as junk (breaks J6, J7). |
+| D6 | 2026-11-08 | F1 ("new WhatsApp image searchable within 2 min, app closed") is a hypothesis to measure, not an acceptance guarantee. | Android defers background jobs by app-standby bucket, and phone-maker battery savers kill them. |
+| D7 | 2026-11-08 | Under partial photo access (Android 14+), the banner also explains that new images will not be indexed automatically. | Newly received images are not added to a user's partial selection, so F1 cannot work in that mode. |
+| D8 | 2026-11-08 | Coil's disk cache is disabled; thumbnails come from MediaStore (`ContentResolver.loadThumbnail`). | Coil's disk cache would store unencrypted thumbnails, including Sensitive images, in app storage. |
+| D9 | 2026-11-08 | The evaluation export is a separate `eval` build variant, shared out through the Android share sheet. Exports labels, predictions and timings only. | Volunteers need a stable build; the app has no network, so the share sheet is the only exit. |
+| D10 | 2026-11-08 | User settings (e.g. pause indexing) are stored in Jetpack DataStore; the indexing checkpoint is `image.status = pending`. No extra tables. | The spec's V1 data model has no settings or checkpoint table. |
+| D11 | 2026-11-08 | Follow the build prompt where it is stricter than the spec: `ACCESS_NETWORK_STATE` is also banned; `EVENT_INFO` also counts a 6-digit postal code as a venue signal and a phone number as a contact signal; the junk keyword list adds "good evening" and "happy sunday" and lives in a versioned resource file. | Owner decision, 8 Nov 2026. |
